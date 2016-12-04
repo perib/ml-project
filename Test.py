@@ -18,17 +18,17 @@ print(brain.feedforward([9,9,9,9] ))
 print("potato")
 """
 
-#print(env.action_space)
+print(env.action_space)
 #print(env.observation_space)
 
 filename = 'results/cartpole-experiment-5'
 
-brain = reinforcenet.neuralnet(0.1,[4,2], random.randint(0,20000))
+brain = reinforcenet.neuralnet(0.1,[4,4,4,4,2], random.randint(0,20000))
 
 
 env.monitor.start(filename, force=True)
 total = 0
-for i_episode in range(100000):
+for i_episode in range(200000):
     observation = env.reset()
 
 
@@ -45,6 +45,8 @@ for i_episode in range(100000):
 
         action = brain.feedforward(observation)
 
+
+
         observation, reward, done, info = env.step(action)
 
         total = total + reward
@@ -57,14 +59,14 @@ for i_episode in range(100000):
    #     print("action is %s" %action)
 
         if done:
-        #    print("Episode finished after {} timesteps".format(t+1))
+           # print("Episode finished after {} timesteps".format(t+1))
             break
 
 
 print("****\ntotal reward is %s\n****" % total)
 env.monitor.close()
 
-gym.upload('/home/pedro/Desktop/ML/results/cartpole-experiment-5',api_key='sk_g4guzFpcSQSxIv1VsL8Xsw')
+#gym.upload('/home/pedro/Desktop/ML/results/cartpole-experiment-5',api_key='sk_g4guzFpcSQSxIv1VsL8Xsw')
 
 """
 
