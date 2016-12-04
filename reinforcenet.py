@@ -1,5 +1,4 @@
 # ReinforceNet.py
-# Aviva Blonder
 # A neural network model that learns through reinforcement learning.
 
 import random
