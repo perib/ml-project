@@ -9,24 +9,21 @@ gamma = .7
 learning_rate = 0.1
 numActions = 2
 
+#potato
+
 def run():
     #env = gym.make('LunarLander-v2')
     env = gym.make('CartPole-v1')
 
     batch_size = 32
     buffer_size = 1000
-
-
-
-
-
     probOfRandom = 30
     startE = 1  # Starting chance of random action
     endE = 0#.1  # Final chance of random action
     anneling_steps = 10000.  # How many steps of training to reduce startE to endE.
     num_episodes = 10000  # How many episodes of game environment to train network with.
     pre_train_steps = 10000  # How many steps of random actions before training begins.
-    update_freq = 100
+    update_freq = 1000
     e = startE
     stepDrop = (startE - endE) / anneling_steps
 
@@ -52,7 +49,7 @@ def run():
 
     env.monitor.start(filename, force=True)
     total = 0
-    for i_episode in range(10000):
+    for i_episode in range(100000):
         observation = env.reset()
 
 
