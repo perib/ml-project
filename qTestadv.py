@@ -5,19 +5,28 @@ from gym import envs
 import random
 import numpy as np
 
-def main():
+gamma = .7
+learning_rate = 0.1
+numActions = 2
+
+def run():
     #env = gym.make('LunarLander-v2')
     env = gym.make('CartPole-v1')
-    gamma = .7
-    learning_rate = 0.1
-    numActions = 2
+
+    batch_size = 32
+    buffer_size = 1000
+
+
+
+
+
     probOfRandom = 30
     startE = 1  # Starting chance of random action
     endE = 0#.1  # Final chance of random action
     anneling_steps = 10000.  # How many steps of training to reduce startE to endE.
     num_episodes = 10000  # How many episodes of game environment to train network with.
     pre_train_steps = 10000  # How many steps of random actions before training begins.
-
+    update_freq = 100
     e = startE
     stepDrop = (startE - endE) / anneling_steps
 
@@ -36,11 +45,14 @@ def main():
     filename = 'results/cartpole-experiment-5'
 
     brain = neuralnet.initialize_network(4,4,1)
+    braintarget = neuralnet.initialize_network(4, 4, 1)
+
+    mybuffer = experience_buffer(buffer_size)
 
 
     env.monitor.start(filename, force=True)
     total = 0
-    for i_episode in range(100000):
+    for i_episode in range(10000):
         observation = env.reset()
 
 
@@ -62,26 +74,42 @@ def main():
                 action, Calcreward = maxQ(observation[:],numActions,brain)
 
 
-
             observation2, reward, done, info = env.step(action)
 
-            tmpAcion, max =  maxQ(observation2[:],numActions,brain)
-            QValue = reward + gamma*max
 
-            total = total + reward
+            temp = [0,0,0,0,0]
+            temp[0] = observation
+            temp[1] = action
+            temp[2] = reward
+            temp[3] = observation2
+            temp[4] = done
 
-            state = observation[:]
-            state = np.append(state, 9)
-            state[len(state) - 1] = action
 
-            neuralnet.forward_propagate(brain, state)
+            mybuffer.add(temp)
 
-            if(done):
-                neuralnet.backward_propagate_error(brain, [0])
-                neuralnet.update_weights(brain,state,learning_rate)
-            else:
-                neuralnet.backward_propagate_error(brain, [QValue])
-                neuralnet.update_weights(brain, state, learning_rate)
+
+
+            """
+           tmpAcion, max =  maxQ(observation2[:],numActions,brain)
+           QValue = reward + gamma*max
+
+           total = total + reward
+
+           state = observation[:]
+           state = np.append(state, 9)
+           state[len(state) - 1] = action
+
+           neuralnet.forward_propagate(brain, state)
+
+           if(done):
+               neuralnet.backward_propagate_error(brain, [-1000])
+               neuralnet.update_weights(brain,state,learning_rate)
+           else:
+               neuralnet.backward_propagate_error(brain, [QValue])
+               neuralnet.update_weights(brain, state, learning_rate)
+
+
+           """
 
             observation = observation2
 
@@ -91,13 +119,47 @@ def main():
                 if e > endE:
                     e = e - stepDrop
               #  print("Episode finished after {} timesteps".format(t+1))
+
                 break
+
+
+        if(i_episode% update_freq == 0 and len(mybuffer.buffer) == buffer_size):
+            print()
+            train_on_batch(mybuffer,brain,batch_size)
 
 
     print("****\ntotal reward is %s\n****" % total)
     env.monitor.close()
 
     #gym.upload('/home/pedro/Desktop/ML/results/cartpole-experiment-5',api_key='sk_g4guzFpcSQSxIv1VsL8Xsw')
+
+
+def train_on_batch(buffer, brain, batch_size):
+    memories = buffer.sample(batch_size)
+    print('TRAINING')
+    for memory in memories:
+        observation = memory[0]
+        action = memory[1]
+        reward = memory[2]
+        observation2 = memory [3]
+        done = memory[4]
+
+        state = observation[:]
+        state = np.append(state, 9)
+        state[len(state) - 1] = action
+
+        neuralnet.forward_propagate(brain, state)
+
+        if (done): #if this move lead to a termination of the episode
+            neuralnet.backward_propagate_error(brain, [reward])
+            neuralnet.update_weights(brain, state, learning_rate)
+        else:
+            tmpAcion, max = maxQ(observation2[:], numActions, brain)
+            QValue = reward + gamma * max
+            neuralnet.backward_propagate_error(brain, [QValue])
+            neuralnet.update_weights(brain, state, learning_rate)
+
+
 
 def maxQ(state,numActions,brain):
     bestR = 0
@@ -112,19 +174,32 @@ def maxQ(state,numActions,brain):
 
     return bestAction, bestR
 
+
+# [Observations1, action, reward, observations2, terminal]
 class experience_buffer():
 
     def __init__(self, buffer_size = 1000):
         self.buffer = []
         self.buffer_size = buffer_size
+        self.current = 0
 
     def add(self, experience):
-        if len(self.buffer) + len(experience) >= self.buffer_size:
-            self.buffer[0:(len(experience) + len(self.buffer)) - self.buffer_size] = []
-        self.buffer.extend(experience)
+        if len(self.buffer)  >= self.buffer_size:
+            if(self.current == self.buffer_size-1):
+                self.current = 0
+            self.buffer[self.current] = experience
+            self.current += 1
+        else:
+            self.buffer.append(experience)
 
     def sample(self, size):
         return random.sample(self.buffer, size)
+
+
+
+def main():
+    run()
+
 
 
 main()
