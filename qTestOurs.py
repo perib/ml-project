@@ -12,18 +12,32 @@ numActions = 2
 #potato
 
 def run():
-    #env = gym.make('LunarLander-v2')
+   # env = gym.make('LunarLander-v2')
     env = gym.make('CartPole-v1')
+
+#old values that got some learns
+#    batch_size = 32 #number of memories to learn from
+#    buffer_size = 1000 #how many memories are stored in one batch
+#    startE = 1  # Starting chance of random action
+#    endE = 0#.1  # Final chance of random action
+#    anneling_steps = 10000.  # How many steps of training to reduce startE to endE.
+#    num_episodes = 100000  # How many episodes of game environment to train network with.
+#    pre_train_steps = 10000  # How many steps of random actions before training begins.
+#    update_freq = 5000 #train the network after this many episodes
+
+
 
     batch_size = 32 #number of memories to learn from
     buffer_size = 1000 #how many memories are stored in one batch
     startE = 1  # Starting chance of random action
     endE = 0#.1  # Final chance of random action
     anneling_steps = 10000.  # How many steps of training to reduce startE to endE.
-    num_episodes = 10000  # How many episodes of game environment to train network with.
+    num_episodes = 100000  # How many episodes of game environment to train network with.
     pre_train_steps = 10000  # How many steps of random actions before training begins.
     update_freq = 5000 #train the network after this many episodes
 
+    prevBestR =0
+    preStepcount = 0
     e = startE #chance of random action
     stepDrop = (startE - endE) / anneling_steps #updated every episode
 
@@ -49,7 +63,7 @@ def run():
 
     env.monitor.start(filename, force=True)
     total = 0
-    for i_episode in range(100000):
+    for i_episode in range(num_episodes):
         observation = env.reset()
 
         if(i_episode % 1000 == 0):
@@ -62,8 +76,9 @@ def run():
         #    print(observation)
 
 
-            if np.random.rand(1) < e:#chooses a random example or finds the action with the best Q1
+            if np.random.rand(1) < e or preStepcount< pre_train_steps:#chooses a random example or finds the action with the best Q1
                 action = env.action_space.sample()
+                preStepcount=+1
             else:
                 action, Calcreward = maxQ(observation[:],numActions,brain)
 
@@ -75,7 +90,7 @@ def run():
             temp = [0,0,0,0,0]
             temp[0] = observation
             temp[1] = action
-            temp[2] = random.randint(-2,2)
+            temp[2] = reward
             temp[3] = observation2 #the current environment after taking a step
             temp[4] = done #true if the game ended (pole fell over)
 
@@ -111,12 +126,17 @@ def run():
        #     print("action is %s" %action)
 
             if done:
-                if e > endE:
+                if e > endE and preStepcount >= pre_train_steps:
                     e = e - stepDrop
               #  print("Episode finished after {} timesteps".format(t+1))
 
                 break
 
+        if(total > prevBestR): #train it if it does well
+            prevBestR = total
+            if(preStepcount >= pre_train_steps and len(mybuffer.buffer) == buffer_size):
+                train_on_batch(mybuffer, brain, batch_size)
+                train_on_batch(mybuffer, brain, batch_size)
 
         if(i_episode% update_freq == 0 and len(mybuffer.buffer) == buffer_size):
             train_on_batch(mybuffer,brain,batch_size)
@@ -145,7 +165,7 @@ def train_on_batch(buffer, brain, batch_size):
         brain.feedforward(state)[0]
 
         if (done): #if this move lead to a termination of the episode
-            brain.backpropagate(0)
+            brain.backpropagate(reward)
         else:
             tmpAcion, max = maxQ(observation2[:], numActions, brain)
             QValue = reward + gamma * max
@@ -196,7 +216,7 @@ def main():
 
 def tests():
     env = gym.make('CartPole-v1')
-    brain = reinforcenet.neuralnet(0.1, [5, 2], random.randint(0, 20000))
+    brain = reinforcenet.neuralnet(0.1, [5, 1], random.randint(0, 20000))
     observation = env.reset()
 
     state = observation[:]
