@@ -15,17 +15,17 @@ def run():
     #env = gym.make('LunarLander-v2')
     env = gym.make('CartPole-v1')
 
-    batch_size = 32
-    buffer_size = 1000
-    probOfRandom = 30
+    batch_size = 500 #number of memories to learn from
+    buffer_size = 5000 #how many memories are stored in one batch
     startE = 1  # Starting chance of random action
     endE = 0#.1  # Final chance of random action
     anneling_steps = 10000.  # How many steps of training to reduce startE to endE.
     num_episodes = 10000  # How many episodes of game environment to train network with.
     pre_train_steps = 10000  # How many steps of random actions before training begins.
-    update_freq = 1000
-    e = startE
-    stepDrop = (startE - endE) / anneling_steps
+    update_freq = 5000 #train the network after this many episodes
+
+    e = startE #chance of random action
+    stepDrop = (startE - endE) / anneling_steps #updated every episode
 
 
     """
@@ -42,16 +42,15 @@ def run():
     filename = 'results/cartpole-experiment-5'
 
     brain = neuralnet.initialize_network(4,4,1)
-    braintarget = neuralnet.initialize_network(4, 4, 1)
 
-    mybuffer = experience_buffer(buffer_size)
+
+    mybuffer = experience_buffer(buffer_size) #creates a place to store memories
 
 
     env.monitor.start(filename, force=True)
     total = 0
     for i_episode in range(100000):
         observation = env.reset()
-
 
         if(i_episode % 1000 == 0):
             print(i_episode)
@@ -62,27 +61,25 @@ def run():
          #   env.render()
         #    print(observation)
 
-           # action = env.action_space.sample()
 
-
-            if np.random.rand(1) < e:
-                action = np.random.randint(0,numActions)
+            if np.random.rand(1) < e:#chooses a random example or finds the action with the best Q1
+                action = env.action_space.sample()
             else:
                 action, Calcreward = maxQ(observation[:],numActions,brain)
 
 
-            observation2, reward, done, info = env.step(action)
+            observation2, reward, done, info = env.step(action) #takes a step
 
 
             temp = [0,0,0,0,0]
             temp[0] = observation
             temp[1] = action
             temp[2] = reward
-            temp[3] = observation2
-            temp[4] = done
+            temp[3] = observation2 #the current environment after taking a step
+            temp[4] = done #true if the game ended (pole fell over)
 
 
-            mybuffer.add(temp)
+            mybuffer.add(temp) #stores the memory
 
 
 
@@ -121,7 +118,6 @@ def run():
 
 
         if(i_episode% update_freq == 0 and len(mybuffer.buffer) == buffer_size):
-            print()
             train_on_batch(mybuffer,brain,batch_size)
 
 
@@ -130,7 +126,7 @@ def run():
 
     #gym.upload('/home/pedro/Desktop/ML/results/cartpole-experiment-5',api_key='sk_g4guzFpcSQSxIv1VsL8Xsw')
 
-
+#trains the network on a set of instances all at once
 def train_on_batch(buffer, brain, batch_size):
     memories = buffer.sample(batch_size)
     print('TRAINING')
@@ -157,7 +153,7 @@ def train_on_batch(buffer, brain, batch_size):
             neuralnet.update_weights(brain, state, learning_rate)
 
 
-
+#retures the action with the best predicted reward
 def maxQ(state,numActions,brain):
     bestR = 0
     bestAction = 0
@@ -173,6 +169,7 @@ def maxQ(state,numActions,brain):
 
 
 # [Observations1, action, reward, observations2, terminal]
+#stores the memories and replaces old ones
 class experience_buffer():
 
     def __init__(self, buffer_size = 1000):
