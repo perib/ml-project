@@ -16,13 +16,13 @@ def run():
     env = gym.make('CartPole-v1')
 
     batch_size = 32 #number of memories to learn from
-    buffer_size = 50000 #how many memories are stored in one batch
+    buffer_size = 1000 #how many memories are stored in one batch
     startE = 1  # Starting chance of random action
     endE = 0#.1  # Final chance of random action
     anneling_steps = 10000.  # How many steps of training to reduce startE to endE.
     num_episodes = 10000  # How many episodes of game environment to train network with.
     pre_train_steps = 10000  # How many steps of random actions before training begins.
-    update_freq = 100 #train the network after this many episodes
+    update_freq = 5000 #train the network after this many episodes
 
     e = startE #chance of random action
     stepDrop = (startE - endE) / anneling_steps #updated every episode
@@ -106,7 +106,7 @@ def run():
 
            """
 
-            observation = observation2
+            observation = observation2[:]
 
        #     print("action is %s" %action)
 
