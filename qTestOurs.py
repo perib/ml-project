@@ -5,8 +5,9 @@ from gym import envs
 import random
 import numpy as np
 import copy
+import matplotlib.pyplot as plt
 
-gamma = .99
+gamma = .9
 learning_rate = 0.1
 numActions = 2
 
@@ -29,13 +30,26 @@ def run():
 
 
     batch_size = 35 #number of memories to learn from
-    buffer_size = 10000 #how many memories are stored in one batch
+    buffer_size = 50000 #how many memories are stored in one batch
     startE = 1  # Starting chance of random action
-    endE = 0.1 #.1  # Final chance of random action
-    anneling_steps = 1000.  # How many steps of training to reduce startE to endE.
-    num_episodes = 300000  # How many episodes of game environment to train network with.
+    endE = 0.0001 #.1  # Final chance of random action
+    anneling_steps = 500  # How many steps of training to reduce startE to endE.
+    num_episodes = 5000  # How many episodes of game environment to train network with.
     pre_train_steps = 10000  # How many steps of random actions before training begins.
     update_freq = 1 #train the network after this many episodes
+
+    savedTotalR = []
+
+    print(batch_size)
+    print(buffer_size)
+    print(startE)
+    print(endE)
+    print(anneling_steps)
+    print(num_episodes)
+    print(pre_train_steps)
+    print(update_freq)
+
+
 
     currentBest = 0
     preStepcount = 0
@@ -54,9 +68,9 @@ def run():
     #print(env.action_space)
     #print(env.observation_space)
 
-    filename = 'results/cartpole-experiment-5'
+    filename = 'results/cartpole-experiment-test2'
 
-    brain = reinforcenet.neuralnet(learning_rate, [5,10,1], random.randint(0, 20000))
+    brain = reinforcenet.neuralnet(learning_rate, [5,64,1], random.randint(0, 20000))
 
 
     mybuffer = experience_buffer(buffer_size) #creates a place to store memories
@@ -67,7 +81,9 @@ def run():
     for i_episode in range(num_episodes):
         observation = env.reset()
 
-        if(i_episode % 500 == 0):
+        savedTotalR.append(total)
+
+        if(i_episode % 100 == 0):
             print(i_episode)
             print("****\ntotal reward is %s\n****" % total)
             currentBest = 0
@@ -120,7 +136,13 @@ def run():
     print("****\ntotal reward is %s\n****" % total)
     env.monitor.close()
 
-    gym.upload('/home/pedro/Desktop/ML/results/cartpole-experiment-5',api_key='sk_g4guzFpcSQSxIv1VsL8Xsw')
+    plt.plot(savedTotalR)
+
+
+    plt.ylabel('Reward over time')
+    plt.show()
+
+    #gym.upload('/home/pedro/Desktop/ML/results/cartpole-experiment-5',api_key='sk_g4guzFpcSQSxIv1VsL8Xsw')
 
 #trains the network on a set of instances all at once
 def train_on_batch(buffer, brain, batch_size):
@@ -145,6 +167,12 @@ def train_on_batch(buffer, brain, batch_size):
         else:
             tmpAcion, max = maxQ(copy.deepcopy(observation2), numActions, brain)
             QValue = reward + gamma * max
+            #print()
+          #  print(reward)
+            #print(max)
+            #print(QValue)
+            if(QValue > 500):
+                QValue = 500;
             brain.feedforward(copy.deepcopy(state))
             brain.backpropagate([QValue])
 
@@ -192,17 +220,23 @@ class experience_buffer():
 
 
 def main():
-    run()
+    #run()
     #tests()
+    #gym.upload('/home/pedro/Desktop/ML/results/cartpole-experiment-test', api_key='sk_g4guzFpcSQSxIv1VsL8Xsw')
+    gym.upload('/home/pedro/Desktop/ML/results/cartpole-experiment-test2', api_key ='sk_KOZ7tcB2TCCPWyOI5DGckQ' )
 
 def tests():
     env = gym.make('CartPole-v1')
-    brain = reinforcenet.neuralnet(0.1, [5, 1], random.randint(0, 20000))
+    brain = reinforcenet.neuralnet(0.1, [5,100, 1], random.randint(0, 20000))
     observation = env.reset()
 
     state = observation[:]
     state = np.append(state, 9)
     state[len(state) - 1] = 1
+
+    state2 = [9,-34,9,999,0]
+
+    num = 5
 
     print(state)
 
@@ -211,38 +245,29 @@ def tests():
 
     print(Result)
 
-    Result = brain.feedforward(copy.deepcopy(state))
-
-    print(Result)
-
-    brain.backpropagate([5])
+    brain.backpropagate([num])
 
     Result = brain.feedforward(copy.deepcopy(state))
 
     print(Result)
 
-
-    brain.backpropagate([5])
-
-    Result = brain.feedforward(copy.deepcopy(state))
-
-    print(Result)
-
-    brain.backpropagate([5])
-
-    Result = brain.feedforward(copy.deepcopy(state))
-
-    print(Result)
-
-    brain.backpropagate([5])
+    brain.backpropagate([num])
 
     Result = brain.feedforward(copy.deepcopy(state))
 
     print(Result)
 
 
+    for i in range(2000):
+        brain.feedforward(copy.deepcopy(state2))
+        print(brain.feedforward(copy.deepcopy(state)))
+        brain.backpropagate([num])
 
-    print(maxQ(copy.deepcopy(observation),2,brain))
+
+    Result = brain.feedforward(copy.deepcopy(state))
+    print(Result)
+
+
 
 
 
