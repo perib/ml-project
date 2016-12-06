@@ -31,17 +31,14 @@ class neuralnet:
     def feedforward(self, state):
         # sets the activation of the nodes in the input layer to the state of the environment
         self.inputpool.activation = state
-        # feeds activation forward from the input pool and returns the index of the chosen action
-        self.action = self.inputpool.feedforward()
-        returnme = self.action
-        self.action = self.action.index(max(self.action))
-        return returnme
+        # feeds activation forward from the input pool and returns the activation of the output pool
+        return self.inputpool.feedforward()
 
     # backpropagates on the outcome of the action
     ## reward - actual outcome of taking the action
-    def backpropagate(self, reward):
+    def backpropagate(self, target):
         # backpropagate starting from the output layer
-        self.outputpool.backprop(self.action, reward, self.lrate)
+        self.outputpool.backprop(target, self.lrate)
 
 
 # the structure of the neural network defined recursively
@@ -99,29 +96,25 @@ class pool:
         return self.nextpool.getLast()
 
     # feeds activation forward from this pool
-    ## returns the index of the most strongly activated node in the outputpool
+    ## returns the activations of all of the nodes in the outputpool
     def feedforward(self):
+        # prepare the pool for forward activation
         for n in range(0, len(self.activation)):
-            # if this is not the input pool
+            # if this is not the input pool add bias to the activation of each node
             if self.prevpool != None:
-                # add bias to the activation of each node in the pool and take the sigmoid
-                self.prevactivation[n] = 1 / (1 + math.exp(-(self.activation[n] + self.bias[n])))
+                self.prevactivation[n] = self.activation[n] + self.bias[n]
+                # if this is not the output pool, take the sigmoid too
+                if self.nextpool != None:
+                    self.prevactivation[n] = 1 / (1 + math.exp(-self.prevactivation[n]))
             # if this is the input pool, just set prevactivation to activation
             else:
                 self.prevactivation[n] = self.activation[n]
+            # clear activation for the next run
             self.activation[n] = 0
+
         # if this is the output pool return the activations of all of the nodes for Q-learning
         if self.nextpool == None:
             return self.prevactivation
-            # chooses the most strongly activated node
-        ##            best = self.prevactivation[0]
-        ##            bestn = 0
-        ##            for n in range(1 , len(self.activation)):
-        ##                if self.prevactivation[n] > best:
-        ##                    best = self.prevactivation[n]
-        ##                    bestn = n
-        ##            return bestn
-
         # otherwise use the activation of each node to contribute to the activation of the next pool
         else:
             # loop through each node in this pool and use it to activate the next pool
@@ -162,7 +155,6 @@ class pool:
             if choice <= t:
                 return n
 
-
     # provides feedback backwards from the chosen action in the output pool
     ## node - the index of the chosen action
     ## error - the squared difference between the expected and acual reward
@@ -175,9 +167,7 @@ class pool:
             self.prevpool.blame[prevn] += self.inweights[prevn][node] * error
             # adjust the weight from that node to this one
             dW = lrate * self.prevpool.prevactivation[prevn] * error
-            ##            print(dW)
             self.inweights[prevn][node] += dW
-
 
     # general purpose backpropagation function that backpropagates from all nodes in this pool
     def backpropagate(self, lrate):
@@ -195,51 +185,12 @@ class pool:
         if self.prevpool != None:
             self.prevpool.backpropagate(lrate)
 
-
-    # backpropagate on the output layer using the reward provided
-    def backprop(self, action, reward, lrate):
-        # calculate error based on the difference between the expected and actual reward
-        error = reward - self.prevactivation[action]
-        # loop through all the nodes in this pool to backpropagate from each of them
-        for node in range(0, len(self.activation)):
-            # if this is the action that was chosen, use error
-            if node == action:
-                feedback = self.prevactivation[node] * (1 - self.prevactivation[node]) * error
-                # otherwise use -error to settle on one action
-                ##            else:
-                ##                feedback = -1*self.prevactivation[node]*(1-self.prevactivation[node])*error
-                # backpropagate!
-                self.backpropNode(node, feedback, lrate)
+    # backpropagate on the output layer using the target for each node
+    def backprop(self, target, lrate):
+        # loop through all of the nodes in the output layer to backpropagate from them
+        for node in range(len(self.activation)):
+            # calculate error based on the difference between the target and actual values
+            error = target[node] - self.prevactivation[node]
+            self.backpropNode(node, error, lrate)
         # backpropagate on the next pool
         self.prevpool.backpropagate(lrate)
-
-
-# what I've been using to test the neural network and see what it's doing
-def main():
-    nn = neuralnet(.05, [2, 2])
-    for i in range(0, 10):
-        print()
-        act = nn.feedforward([1, 0])
-        print(act)
-        if act == 0:
-            nn.backpropagate(1)
-        else:
-            nn.backpropagate(-1)
-        act = nn.feedforward([0, 1])
-        print(act)
-        if act == 1:
-            nn.backpropagate(1)
-        else:
-            nn.backpropagate(-1)
-            ##        act = nn.feedforward([1, 1])
-            ##        print(act)
-            ##        if act == 0:
-            ##            nn.backpropagate(1)
-            ##        else:
-            ##            nn.backpropagate(0)
-            ##        act = nn.feedforward([0, 0])
-            ##        print(act)
-            ##        if act == 0:
-            ##            nn.backpropagate(1)
-            ##        else:
-            ##            nn.backpropagate(0)

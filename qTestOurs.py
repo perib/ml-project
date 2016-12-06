@@ -28,14 +28,14 @@ def run():
 
 
 
-    batch_size = 30 #number of memories to learn from
-    buffer_size = 50000 #how many memories are stored in one batch
+    batch_size = 35 #number of memories to learn from
+    buffer_size = 10000 #how many memories are stored in one batch
     startE = 1  # Starting chance of random action
-    endE = 0.01 #.1  # Final chance of random action
-    anneling_steps = 10000.  # How many steps of training to reduce startE to endE.
-    num_episodes = 30000  # How many episodes of game environment to train network with.
+    endE = 0.1 #.1  # Final chance of random action
+    anneling_steps = 1000.  # How many steps of training to reduce startE to endE.
+    num_episodes = 300000  # How many episodes of game environment to train network with.
     pre_train_steps = 10000  # How many steps of random actions before training begins.
-    update_freq = 4 #train the network after this many episodes
+    update_freq = 1 #train the network after this many episodes
 
     currentBest = 0
     preStepcount = 0
@@ -56,7 +56,7 @@ def run():
 
     filename = 'results/cartpole-experiment-5'
 
-    brain = reinforcenet.neuralnet(0.1, [5,10,1], random.randint(0, 20000))
+    brain = reinforcenet.neuralnet(learning_rate, [5,10,1], random.randint(0, 20000))
 
 
     mybuffer = experience_buffer(buffer_size) #creates a place to store memories
@@ -73,16 +73,17 @@ def run():
             currentBest = 0
 
         total = 0
-        for t in range(10000):
+        for t in range(100000):
          #   env.render()
         #    print(observation)
 
 
             if np.random.rand(1) < e or preStepcount< pre_train_steps:#chooses a random example or finds the action with the best Q1
                 action = env.action_space.sample()
-                preStepcount=+1
+                preStepcount = preStepcount + 1
             else:
                 action, Calcreward = maxQ(copy.deepcopy(observation),numActions,brain)
+
 
 
             observation2, reward, done, info = env.step(action) #takes a step
@@ -140,12 +141,12 @@ def train_on_batch(buffer, brain, batch_size):
 
         if (done): #if this move lead to a termination of the episode
             brain.feedforward(copy.deepcopy(state))
-            brain.backpropagate(-1)
+            brain.backpropagate([reward])
         else:
             tmpAcion, max = maxQ(copy.deepcopy(observation2), numActions, brain)
             QValue = reward + gamma * max
             brain.feedforward(copy.deepcopy(state))
-            brain.backpropagate(QValue)
+            brain.backpropagate([QValue])
 
 
 
@@ -214,35 +215,32 @@ def tests():
 
     print(Result)
 
-    brain.backpropagate(1)
+    brain.backpropagate([5])
 
     Result = brain.feedforward(copy.deepcopy(state))
 
     print(Result)
 
-    brain.backpropagate(1)
+
+    brain.backpropagate([5])
 
     Result = brain.feedforward(copy.deepcopy(state))
 
     print(Result)
 
-    brain.backpropagate(1)
+    brain.backpropagate([5])
 
     Result = brain.feedforward(copy.deepcopy(state))
 
     print(Result)
 
-    brain.backpropagate(1)
+    brain.backpropagate([5])
 
     Result = brain.feedforward(copy.deepcopy(state))
 
     print(Result)
 
-    brain.backpropagate(1)
 
-    Result = brain.feedforward(copy.deepcopy(state))
-
-    print(Result)
 
     print(maxQ(copy.deepcopy(observation),2,brain))
 
