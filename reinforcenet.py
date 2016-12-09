@@ -87,7 +87,7 @@ class pool:
             # set the next pool's incoming weights to this pool's outgoing weights
             self.nextpool.inweights = self.outweights
 
-    # returns the output pool for the superclass
+    # returns the output pool for the neuralnet class
     def getLast(self):
         # if this is the output pool, return this pool
         if self.nextpool == None:
@@ -124,36 +124,6 @@ class pool:
                     self.nextpool.activation[nextn] += self.prevactivation[n] * self.outweights[n][nextn]
             # feedforward from the next pool and return the results
             return self.nextpool.feedforward()
-
-    # calculates the probability of each action given the environment using the softmax algorithm
-    ## activation - an array of the activations of each node in the output pool
-    ## returns the index of the action chosen randomly using the probabilities
-    def softmax(activation):
-        pA = []  # list of probabilities of each action being the best
-        total = 0  # sum of all of the expected reward for each action
-        # sum up e^expected reward for each action
-        for n in range(0, len(activation)):
-            # add e^activation of this node to pA to be turned into a probability
-            pA.append(math.exp(-activation[n]))
-            # also add it to total
-            total += pA[n]
-        # if the total activation is zero, choose an action at random
-        if total == 0:
-            return random.randint(0, len(activation) - 1)
-        # choose a random number between 0 and 1 and use it to choose an action
-        choice = random.random()
-        # the sum of the probabilities so far
-        t = 0
-        # loop through the possible actions again and calculate the probabilities
-        ## then use those probabilities to choose an action
-        for n in range(0, len(pA)):
-            # calculate the probability
-            pA[n] = pA[n] / total
-            # add it to the total
-            t += pA[n]
-            # if the random choice is within the range of this action, choose it
-            if choice <= t:
-                return n
 
     # provides feedback backwards from the chosen action in the output pool
     ## node - the index of the chosen action
@@ -194,3 +164,35 @@ class pool:
             self.backpropNode(node, error, lrate)
         # backpropagate on the next pool
         self.prevpool.backpropagate(lrate)
+
+
+# Note: this isn't actually used in this version, but the function has been implemented
+# calculates the probability of each action given the environment using the softmax algorithm
+## activation - an array of the activations of each node in the output pool
+## returns the index of the action chosen randomly using the probabilities
+def softmax(activation):
+    pA = []  # list of probabilities of each action being the best
+    total = 0  # sum of all of the expected reward for each action
+    # sum up e^expected reward for each action
+    for n in range(0, len(activation)):
+        # add e^activation of this node to pA to be turned into a probability
+        pA.append(math.exp(-activation[n]))
+        # also add it to total
+        total += pA[n]
+    # if the total activation is zero, choose an action at random
+    if total == 0:
+        return random.randint(0, len(activation) - 1)
+    # choose a random number between 0 and 1 and use it to choose an action
+    choice = random.random()
+    # the sum of the probabilities so far
+    t = 0
+    # loop through the possible actions again and calculate the probabilities
+    ## then use those probabilities to choose an action
+    for n in range(0, len(pA)):
+        # calculate the probability
+        pA[n] = pA[n] / total
+        # add it to the total
+        t += pA[n]
+        # if the random choice is within the range of this action, choose it
+        if choice <= t:
+            return n
