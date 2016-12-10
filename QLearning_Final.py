@@ -5,14 +5,16 @@ import random
 import numpy as np
 import copy
 import matplotlib.pyplot as plt
+#Pedro Ribeiro
+#Uses QLearning to solve the cartpole environment
+
 
 gamma = .9
 learning_rate = 0.1
 numActions = 2
 
-#potato
 
-def run():
+def run(): #Runs the neuralnetwork using q-learning on the cartpole environment.
     #env = gym.make('LunarLander-v2')
     # env = gym.make('MountainCar-v0')
     env = gym.make('CartPole-v1')
@@ -21,16 +23,16 @@ def run():
     #print(env.observation_space)
 
     if(input("use default values? (y/n) ") == "y"):
-        batch_size = 35 #number of memories to learn from
+        batch_size = 40 #number of memories to learn from
         buffer_size = 50000 #how many memories are stored in one batch
         startE = 1  # Starting chance of random action
-        endE = 0.0001 #.1  # Final chance of random action
-        anneling_steps = 500  # How many steps of training to reduce startE to endE.
+        endE = 0.01 #.1  # Final chance of random action
+        anneling_steps = 1500  # How many steps of training to reduce startE to endE.
         num_episodes = 5000  # How many episodes of game environment to train network with.
         pre_train_steps = 10000  # How many steps of random actions before training begins.
         update_freq = 1 #train the network after this many episodes
         numHiddens = 64 #Number of nodes in the hidden layer
-        filename = 'results/cartpolewinner3' #where to save the environment monitor data
+        filename = 'results/cartpolewinner10' #where to save the environment monitor data
     else:
         batch_size = eval(input("Batch size?(default 35) ")) #number of memories to learn from
         buffer_size = eval(input("Buffer size?(default 50000) ")) #how many memories are stored in one batch
@@ -191,7 +193,7 @@ class experience_buffer():
 def main():
     run()
     #tests()
-    #gym.upload('/home/pedro/Desktop/ML/results/cartpolewinner2', api_key ='sk_KOZ7tcB2TCCPWyOI5DGckQ')
+    #gym.upload('/home/pedro/Desktop/ML/results/cartpolewinner10', api_key ='sk_KOZ7tcB2TCCPWyOI5DGckQ')
 
 def tests(): #misc debugging
     env = gym.make('CartPole-v1')
